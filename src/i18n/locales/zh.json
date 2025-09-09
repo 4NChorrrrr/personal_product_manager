@@ -1,0 +1,127 @@
+{
+  "header": {
+    "title": "想法到看板"
+  },
+  "projects": {
+    "title": "您的项目",
+    "subtitle": "管理您的AI生成项目看板",
+    "newProject": "新建项目",
+    "noProjects": "暂无项目",
+    "createFirstProject": "创建您的第一个项目",
+    "features": "功能",
+    "progress": "进度",
+    "tasks": "任务",
+    "taskStatus": "任务状态",
+    "todo": "待办",
+    "doing": "进行中",
+    "done": "已完成",
+    "deleteConfirm": "确定要删除此项目吗？此操作不可撤销。",
+    "deleteWarning": "此操作不可撤销。所有项目数据将被永久移除。"
+  },
+  "newProject": {
+    "title": "创建新项目",
+    "subtitle": "输入您的项目想法，让AI为您生成项目看板",
+    "inputLabel": "项目想法",
+    "placeholder": "输入您的项目想法...",
+    "inputHint": "用200个字符或更少的文字描述您的项目",
+    "generate": "生成项目",
+    "generating": "正在生成您的项目",
+    "generatingHint": "请稍候，我们正在为您创建项目看板",
+    "tryDemo": "试用演示",
+    "settings": "设置",
+    "allProjects": "所有项目",
+    "stopGeneration": "停止生成",
+    "steps": {
+      "prd": "创建产品需求",
+      "features": "提取功能",
+      "tasks": "生成任务",
+      "board": "构建项目看板",
+      "status": {
+        "pending": "待处理",
+        "generating": "生成中",
+        "completed": "已完成",
+        "error": "错误"
+      }
+    },
+    "errors": {
+      "generationFailed": "项目生成失败，请重试。"
+    }
+  },
+  "kanban": {
+    "backToProjects": "返回项目列表",
+    "addTask": "添加任务",
+    "editTask": "编辑任务",
+    "deleteTask": "删除任务",
+    "taskTitle": "任务标题",
+    "taskDescription": "任务描述",
+    "save": "保存",
+    "cancel": "取消",
+    "todo": "待办",
+    "doing": "进行中",
+    "done": "已完成",
+    "back": "返回",
+    "loading": "正在加载项目...",
+    "feature": "功能",
+    "progress": "进度",
+    "tasksCompleted": "个任务已完成",
+    "noTasks": "无任务"
+  },
+  "taskDetail": {
+    "title": "任务详情",
+    "back": "返回看板",
+    "loading": "加载任务中...",
+    "description": "描述",
+    "noDescription": "未提供描述",
+    "information": "任务信息",
+    "taskId": "任务ID",
+    "featureId": "功能ID",
+    "status": "状态",
+    "project": "项目",
+    "confirmDelete": "确定要删除此任务吗？此操作不可撤销。",
+    "deleteWarning": "此操作不可撤销。所有任务数据将被永久移除。"
+  },
+  "common": {
+    "save": "保存",
+    "cancel": "取消",
+    "edit": "编辑",
+    "delete": "删除"
+  },
+  "settings": {
+    "title": "AI 配置",
+    "modelType": "模型类型选择",
+    "modelTypeDescription": "选择要使用的模型类型，同一时间只有一个模型生效",
+    "ollamaModel": "Ollama (本地模型)",
+    "onlineModel": "在线模型",
+    "ollamaConfig": "Ollama 配置",
+    "ollamaUrl": "Ollama API URL",
+    "modelName": "模型名称",
+    "aiProvider": "AI 模型提供商",
+    "aiProviderDescription": "选择模型供应商和模型，系统将自动填入API地址",
+    "provider": "模型供应商",
+    "selectProvider": "选择供应商",
+    "model": "模型",
+    "selectModel": "选择模型",
+    "apiEndpoint": "API 端点",
+    "apiEndpointPlaceholder": "API端点地址",
+    "apiKey": "API 密钥",
+    "apiKeyPlaceholder": "输入API密钥",
+    "apiKeyValid": "API密钥格式正确",
+    "apiKeyValidating": "正在验证API密钥...",
+    "apiKeyValidSuccess": "API密钥验证成功",
+    "apiKeyValidError": "API密钥验证失败",
+    "apiKeyFormatInvalid": "API密钥格式无效",
+    "apiKeyInvalid": "API密钥无效",
+    "unknownProvider": "未知的模型供应商",
+    "openaiKeyFormat": "OpenAI API密钥应以'sk-'开头",
+    "anthropicKeyFormat": "Anthropic API密钥应以'sk-ant-'开头",
+    "apiKeyTooShort": "API密钥太短",
+    "reset": "重置为默认值",
+    "cancel": "取消",
+    "save": "保存配置"
+  },
+  "language": {
+    "select": "选择语言",
+    "chinese": "简体中文",
+    "english": "English"
+  }
+}
