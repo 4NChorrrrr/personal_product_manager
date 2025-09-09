@@ -1,4 +1,5 @@
-import { TaskStatus } from './project';
+// 定义任务状态类型
+export type TaskStatus = 'todo' | 'doing' | 'done';
 
 /**
  * 任务类
@@ -9,21 +10,30 @@ export class Task {
   title: string;
   description?: string;
   status: TaskStatus;
+  priority?: string; // 遵循MoSCoW方法：Must have, Should have, Could have, Won't have
+  tag?: string; // 父功能标题
+  estimatedEndDate?: string; // 格式：YYYY-MM-DDTHH:mm
   createdAt?: string;
   updatedAt?: string;
 
   constructor(
     id: string,
-    fid: string,
+    fid: number,
     title: string,
     status: TaskStatus = 'todo',
-    description?: string
+    description?: string,
+    priority?: string,
+    tag?: string,
+    estimatedEndDate?: string
   ) {
     this.id = id;
-    this.fid = fid;
+    this.fid = fid.toString();
     this.title = title;
     this.status = status;
     this.description = description;
+    this.priority = priority;
+    this.tag = tag;
+    this.estimatedEndDate = estimatedEndDate;
     this.createdAt = new Date().toISOString();
     this.updatedAt = new Date().toISOString();
   }
@@ -54,6 +64,52 @@ export class Task {
     this.description = description;
     this.updatedAt = new Date().toISOString();
   }
+
+  /**
+   * 更新任务优先级
+   * @param priority 新优先级
+   */
+  updatePriority(priority: string): void {
+    this.priority = priority;
+    this.updatedAt = new Date().toISOString();
+  }
+
+  /**
+   * 更新任务标签
+   * @param tag 新标签
+   */
+  updateTag(tag: string): void {
+    this.tag = tag;
+    this.updatedAt = new Date().toISOString();
+  }
+
+  /**
+   * 更新任务预计结束日期
+   * @param estimatedEndDate 新预计结束日期
+   */
+  updateEstimatedEndDate(estimatedEndDate: string): void {
+    this.estimatedEndDate = estimatedEndDate;
+    this.updatedAt = new Date().toISOString();
+  }
+
+  /**
+   * 将任务对象转换为普通对象，用于JSON序列化
+   * @returns 普通对象
+   */
+  toJSON() {
+    return {
+      id: this.id,
+      fid: this.fid,
+      title: this.title,
+      description: this.description,
+      status: this.status,
+      priority: this.priority,
+      tag: this.tag,
+      estimatedEndDate: this.estimatedEndDate,
+      createdAt: this.createdAt,
+      updatedAt: this.updatedAt
+    };
+  }
 }
 
 /**
@@ -67,8 +123,8 @@ export class Feature {
   createdAt?: string;
   updatedAt?: string;
 
-  constructor(id: string, title: string, description?: string) {
-    this.id = id;
+  constructor(id: number, title: string, description?: string) {
+    this.id = id.toString();
     this.title = title;
     this.description = description;
     this.tasks = [];
@@ -134,6 +190,21 @@ export class Feature {
   getTasksByStatus(status: TaskStatus): Task[] {
     return this.tasks.filter(task => task.status === status);
   }
+
+  /**
+   * 将功能对象转换为普通对象，用于JSON序列化
+   * @returns 普通对象
+   */
+  toJSON() {
+    return {
+      id: this.id,
+      title: this.title,
+      description: this.description,
+      tasks: this.tasks,
+      createdAt: this.createdAt,
+      updatedAt: this.updatedAt
+    };
+  }
 }
 
 /**
@@ -152,7 +223,7 @@ export class Project {
   constructor(id: string, name: string, startAt?: string, prd?: string) {
     this.id = id;
     this.name = name;
-    this.startAt = startAt;
+    this.startAt = startAt || new Date().toISOString();
     this.prd = prd;
     this.features = [];
     this.tasks = [];
@@ -283,5 +354,22 @@ export class Project {
       allTasks.push(...feature.getTasksByStatus(status));
     });
     return allTasks;
+  }
+
+  /**
+   * 将项目对象转换为普通对象，用于JSON序列化
+   * @returns 普通对象
+   */
+  toJSON() {
+    return {
+      id: this.id,
+      name: this.name,
+      startAt: this.startAt,
+      prd: this.prd,
+      features: this.features,
+      tasks: this.tasks,
+      createdAt: this.createdAt,
+      updatedAt: this.updatedAt
+    };
   }
 }

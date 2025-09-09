@@ -72,19 +72,25 @@
     "loading": "加载任务中...",
     "description": "描述",
     "noDescription": "未提供描述",
+    "endDate": "结束时间",
+    "noEndDate": "未设置结束时间",
     "information": "任务信息",
     "taskId": "任务ID",
     "featureId": "功能ID",
     "status": "状态",
     "project": "项目",
     "confirmDelete": "确定要删除此任务吗？此操作不可撤销。",
-    "deleteWarning": "此操作不可撤销。所有任务数据将被永久移除。"
+    "deleteWarning": "此操作不可撤销。所有任务数据将被永久移除。",
+    "confirmCancel": "确定要不保存并取消吗？",
+    "cancelWarning": "如果您不保存就取消，您的更改将会丢失。"
   },
   "common": {
     "save": "保存",
     "cancel": "取消",
     "edit": "编辑",
-    "delete": "删除"
+    "delete": "删除",
+    "back": "返回",
+    "confirm": "确认"
   },
   "settings": {
     "title": "AI 配置",

@@ -6,7 +6,7 @@ export interface Task {
   description?: string;
   priority?: string; // 遵循MoSCoW方法：Must have, Should have, Could have, Won't have
   tag?: string; // 父功能标题
-  estimatedEndDate?: string; // 格式：YYYY-MM-DD
+  estimatedEndDate?: string; // 格式：YYYY-MM-DDTHH:mm
 }
 
 export interface Feature {

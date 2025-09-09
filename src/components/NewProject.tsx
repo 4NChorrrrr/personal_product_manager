@@ -7,6 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Settings, Sparkles, ArrowRight, Loader2, FolderOpen, Square } from 'lucide-react';
 import { GenerationStep } from '../types/project';
+import { Project, Feature, Task } from '../types/projectClasses';
 
 interface NewProjectProps {
   onProjectGenerated: (projectId: string) => void;
@@ -104,23 +105,50 @@ export function NewProject({ onProjectGenerated, onOpenSettings, onTryDemo, show
       updateStepStatus(4, 'generating');
       
       const projectName = idea.split(' ').slice(0, 5).join(' ');
-      const project = {
-        id: uuidv4(),
-        name: projectName,
-        startAt: new Date().toISOString(),
-        prd: result.prd,
-        features: result.features,
-        tasks: result.tasks
-      };
+      
+      // 使用Project类创建项目实例
+      const projectInstance = new Project(
+        uuidv4(),
+        projectName,
+        new Date().toISOString(),
+        result.prd
+      );
+      
+      // 使用Feature类创建功能实例并添加到项目中
+      result.features.forEach(feature => {
+        const featureInstance = new Feature(
+          feature.id,
+          feature.title,
+          feature.description
+        );
+        
+        projectInstance.addFeature(featureInstance);
+      });
+      
+      // 使用Task类创建任务实例并添加到项目中
+      result.tasks.forEach(task => {
+        const taskInstance = new Task(
+          task.id,
+          task.fid,
+          task.title,
+          task.status,
+          task.description,
+          task.priority,
+          task.tag,
+          task.estimatedEndDate
+        );
+        
+        projectInstance.addTask(taskInstance);
+      });
 
-      saveProject(project);
+      saveProject(projectInstance as any);
       updateStepStatus(4, 'completed');
       
       // Small delay to show completion
       await new Promise(resolve => setTimeout(resolve, 500));
       
       // 导航到项目审查页面
-      navigate(`/review/${project.id}`);
+      navigate(`/review/${projectInstance.id}`);
     } catch (err) {
       // 如果是手动取消的错误，不显示错误消息
       if (err instanceof Error && err.message === 'Generation cancelled') {

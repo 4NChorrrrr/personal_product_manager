@@ -13,9 +13,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ArrowLeft, MoreVertical, CheckCircle, Circle, Clock, Edit, X, Trash2, Move } from 'lucide-react';
+import { ArrowLeft, MoreVertical, CheckCircle, Circle, Clock, Edit, X, Trash2, Move, Calendar } from 'lucide-react';
 import { Project, Task } from '../types/project';
 import { getProject, saveProject } from '../utils/storage';
+import { DateTimePicker } from '@/components/ui/datetime-picker';
+import { format } from 'date-fns';
 
 type TaskStatus = 'todo' | 'doing' | 'done';
 
@@ -38,18 +40,30 @@ function TaskDetailModal({ project, task, onClose, onUpdate, onDelete, onMoveTas
   const [isEditing, setIsEditing] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [isEditingDescription, setIsEditingDescription] = useState(false);
+  const [isEditingEndDate, setIsEditingEndDate] = useState(false);
   const [editedTitle, setEditedTitle] = useState(task.title);
   const [editedDescription, setEditedDescription] = useState(task.description || '');
   const [editedStatus, setEditedStatus] = useState<TaskStatus>(task.status);
   const [editedTag, setEditedTag] = useState(task.tag || '');
+  const [editedEndDate, setEditedEndDate] = useState<string | undefined>(task.estimatedEndDate);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [descriptionChanged, setDescriptionChanged] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
   const handleSave = () => {
-    const updatedTask = { ...task, title: editedTitle, description: editedDescription, status: editedStatus, tag: editedTag };
+    const updatedTask = { 
+      ...task, 
+      title: editedTitle, 
+      description: editedDescription, 
+      status: editedStatus, 
+      tag: editedTag,
+      estimatedEndDate: editedEndDate
+    };
     onUpdate(updatedTask);
     setIsEditing(false);
     setIsEditingTitle(false);
     setIsEditingDescription(false);
+    setIsEditingEndDate(false);
   };
 
   const handleSaveTitle = () => {
@@ -62,6 +76,28 @@ function TaskDetailModal({ project, task, onClose, onUpdate, onDelete, onMoveTas
     const updatedTask = { ...task, description: editedDescription };
     onUpdate(updatedTask);
     setIsEditingDescription(false);
+    setDescriptionChanged(false);
+  };
+
+  const handleCancelDescription = () => {
+    if (descriptionChanged) {
+      setShowCancelConfirm(true);
+    } else {
+      setIsEditingDescription(false);
+    }
+  };
+
+  const confirmCancelDescription = () => {
+    setEditedDescription(task.description || '');
+    setIsEditingDescription(false);
+    setDescriptionChanged(false);
+    setShowCancelConfirm(false);
+  };
+
+  const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newDescription = e.target.value;
+    setEditedDescription(newDescription);
+    setDescriptionChanged(newDescription !== (task.description || ''));
   };
 
   const handleDelete = () => {
@@ -243,13 +279,22 @@ function TaskDetailModal({ project, task, onClose, onUpdate, onDelete, onMoveTas
               {t('taskDetail.description')}
             </h4>
             {isEditingDescription || isEditing ? (
-              <textarea
-                value={editedDescription}
-                onChange={(e) => setEditedDescription(e.target.value)}
-                onBlur={isEditingDescription ? handleSaveDescription : undefined}
-                className="w-full p-1 border rounded min-h-[150px] text-lg font-medium text-muted-foreground"
-                autoFocus
-              />
+              <>
+                <textarea
+                  value={editedDescription}
+                  onChange={handleDescriptionChange}
+                  className="w-full p-1 border rounded min-h-[150px] text-lg font-medium text-muted-foreground"
+                  autoFocus
+                />
+                <div className="flex justify-end space-x-2 mt-2">
+                  <Button variant="outline" onClick={handleCancelDescription}>
+                    {t('common.cancel')}
+                  </Button>
+                  <Button onClick={handleSaveDescription}>
+                    {t('common.save')}
+                  </Button>
+                </div>
+              </>
             ) : (
               <p 
                 className="text-muted-foreground whitespace-pre-line cursor-pointer hover:bg-gray-100 p-1 rounded"
@@ -259,7 +304,50 @@ function TaskDetailModal({ project, task, onClose, onUpdate, onDelete, onMoveTas
               </p>
             )}
           </div>
+
+          <div className="mt-6">
+            <div className="flex items-center mb-2">
+              <Calendar className="h-5 w-5 mr-2 text-muted-foreground" />
+              <h4 className="text-lg font-medium">{t('taskDetail.endDate')}</h4>
+            </div>
+            {isEditingEndDate || isEditing ? (
+              <DateTimePicker
+                value={editedEndDate}
+                onChange={(date) => setEditedEndDate(date)}
+                className="w-full"
+              />
+            ) : (
+              <div 
+                className="text-muted-foreground cursor-pointer hover:bg-gray-100 p-1 rounded"
+                onClick={() => setIsEditingEndDate(true)}
+              >
+                {task.estimatedEndDate 
+                  ? format(new Date(task.estimatedEndDate), 'yyyy-MM-dd HH:mm')
+                  : '1970/01/01 08:00'}
+              </div>
+            )}
+          </div>
         </div>
+
+        {/* Cancel Confirmation Dialog */}
+        {showCancelConfirm && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-md w-full">
+              <h3 className="text-lg font-medium mb-4">{t('taskDetail.confirmCancel')}</h3>
+              <p className="text-muted-foreground mb-6">
+                {t('taskDetail.cancelWarning')}
+              </p>
+              <div className="flex justify-end space-x-2">
+                <Button variant="outline" onClick={() => setShowCancelConfirm(false)}>
+                  {t('common.back')}
+                </Button>
+                <Button onClick={confirmCancelDescription}>
+                  {t('common.confirm')}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Delete Confirmation Dialog */}
         {showDeleteConfirm && (
@@ -344,9 +432,44 @@ export function KanbanBoard({ projectId, onBack }: KanbanBoardProps) {
     switch (priority) {
       case 'Must have': return 'bg-red-100 text-red-800';
       case 'Should have': return 'bg-orange-100 text-orange-800';
-      case 'Could have': return 'bg-yellow-100 text-yellow-800';
+      case 'Could have': return 'bg-blue-100 text-blue-800';
       case "Won't have": return 'bg-gray-100 text-gray-800';
       default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const handlePriorityChange = (taskId: string, currentPriority?: string) => {
+    if (!project) return;
+    
+    // 定义优先级循环顺序
+    const priorities = ['Must have', 'Should have', 'Could have', "Won't have"];
+    
+    // 找到当前优先级的索引，如果没有优先级则从第一个开始
+    const currentIndex = currentPriority ? priorities.indexOf(currentPriority) : -1;
+    const nextIndex = (currentIndex + 1) % priorities.length;
+    const newPriority = priorities[nextIndex];
+    
+    // 更新任务优先级
+    const updatedTasks = tasks.map(t => 
+      t.id === taskId ? { ...t, priority: newPriority } : t
+    );
+    
+    setTasks(updatedTasks);
+    
+    // 保存到localStorage
+    const updatedProject = {
+      ...project,
+      tasks: updatedTasks
+    };
+    saveProject(updatedProject);
+    setProject(updatedProject);
+    
+    // 如果当前选中的任务是被修改的任务，更新选中任务的优先级
+    if (selectedTask && selectedTask.task.id === taskId) {
+      setSelectedTask({
+        project: updatedProject,
+        task: { ...selectedTask.task, priority: newPriority }
+      });
     }
   };
 
@@ -547,9 +670,20 @@ export function KanbanBoard({ projectId, onBack }: KanbanBoardProps) {
                                 >
                                   <CardHeader className="pb-3">
                                     <div className="flex flex-col space-y-2">
-                                      <CardTitle className="text-sm font-medium leading-snug">
-                                        {task.title}
-                                      </CardTitle>
+                                      <div className="flex items-start">
+                                        {/* 优先级标签 - 可点击切换 */}
+                                        <div 
+                                          className={`flex-shrink-0 w-3 h-3 rounded-full mr-2 cursor-pointer ${task.priority ? getTaskPriorityColor(task.priority).replace('bg-', 'bg-').replace('text-', '') : 'bg-gray-300'}`}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handlePriorityChange(task.id, task.priority);
+                                          }}
+                                          title={task.priority || '设置优先级'}
+                                        />
+                                        <CardTitle className="text-sm font-medium leading-snug">
+                                          {task.title}
+                                        </CardTitle>
+                                      </div>
                                       <div className="flex flex-wrap gap-2 items-center">
                                         <Badge 
                                           variant="outline" 
