@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { GenerationStep, Task, Feature } from '../types/project';
 import { saveProject } from '../utils/storage';
+import MarkdownRenderer from './MarkdownRenderer';
 
 interface ReviewProjectProps {
   project: any;
@@ -93,7 +94,7 @@ export function ReviewProject({ project, onProjectConfirmed, onBack, onOpenSetti
 
   const handleUpdateTask = (taskId: string, updates: Partial<Task>) => {
     setTasks(prev => prev.map(task => 
-      task.id === taskId ? { ...task, ...updates } : task
+      task.id === taskId ? { ...task, ...updates, duration: task.duration } : task
     ));
   };
 
@@ -176,6 +177,16 @@ export function ReviewProject({ project, onProjectConfirmed, onBack, onOpenSetti
     onProjectConfirmed(updatedProject);
     // 导航到项目看板页面
     window.location.href = `/project/${updatedProject.id}`;
+  };
+
+  const getTaskPriorityColor = (priority?: string) => {
+    switch (priority) {
+      case 'Must have': return 'bg-red-100 text-red-800';
+      case 'Should have': return 'bg-orange-100 text-orange-800';
+      case 'Could have': return 'bg-blue-100 text-blue-800';
+      case 'Won\'t have': return 'bg-gray-100 text-gray-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
   };
 
   const getTasksForFeature = (featureId: number) => {
@@ -382,14 +393,18 @@ export function ReviewProject({ project, onProjectConfirmed, onBack, onOpenSetti
               <Textarea
                 value={prdContent}
                 onChange={(e) => setPrdContent(e.target.value)}
-                className="min-h-[200px] font-mono text-sm border-primary/20 focus:border-primary/40 transition-colors duration-200"
+                className="min-h-[200px] font-mono text-sm border-primary/20 focus:border-primary/40 transition-colors duration-200 overflow-y-auto"
                 placeholder="产品需求文档内容..."
+                style={{ height: 'auto' }}
+                onInput={(e) => {
+                  const target = e.target as HTMLTextAreaElement;
+                  target.style.height = 'auto';
+                  target.style.height = Math.max(200, target.scrollHeight) + 'px';
+                }}
               />
             ) : (
-              <div className="prose max-w-none">
-                <div className="text-sm bg-muted/50 p-4 rounded-lg border border-border/50 shadow-sm">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{prdContent}</ReactMarkdown>
-                </div>
+              <div className="max-w-none bg-muted/50 p-4 rounded-lg border border-border/50 shadow-sm">
+                <MarkdownRenderer markdown={prdContent} />
               </div>
             )}
           </CardContent>
@@ -406,18 +421,24 @@ export function ReviewProject({ project, onProjectConfirmed, onBack, onOpenSetti
                 <div className="flex items-start justify-between p-4 bg-gradient-to-r from-muted/30 to-muted/10 rounded-lg border border-border/50">
                   <div className="flex-1">
                     <div className="flex items-center space-x-3 mb-2">
-                      <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">功能 {feature.id}</Badge>
+                      <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 whitespace-nowrap">功能 {feature.id}</Badge>
                       <Input
                         value={feature.title}
                         onChange={(e) => handleUpdateFeature(feature.id, { title: e.target.value })}
-                        className="font-semibold text-lg border-0 bg-transparent p-0 h-auto focus:ring-0"
+                        className="font-semibold text-lg border-0 bg-transparent p-0 h-auto focus:ring-0 flex-1"
                       />
                     </div>
                     <Textarea
                       value={feature.description}
                       onChange={(e) => handleUpdateFeature(feature.id, { description: e.target.value })}
-                      className="text-muted-foreground border-0 bg-transparent p-0 resize-none focus:ring-0"
-                      rows={2}
+                      className="text-muted-foreground border-0 bg-transparent p-0 resize-none focus:ring-0 w-full min-h-[24px] max-h-[120px] overflow-y-auto"
+                      rows={1}
+                      style={{ height: 'auto' }}
+                      onInput={(e) => {
+                        const target = e.target as HTMLTextAreaElement;
+                        target.style.height = 'auto';
+                        target.style.height = target.scrollHeight + 'px';
+                      }}
                     />
                   </div>
                   <Button
@@ -444,7 +465,7 @@ export function ReviewProject({ project, onProjectConfirmed, onBack, onOpenSetti
                               task.status === 'done' ? 'default' :
                               task.status === 'doing' ? 'secondary' : 'outline'
                             }
-                            className={`mr-2 ${
+                            className={`mr-2 h-[30px] flex items-center justify-center ${
                               task.status === 'done' ? 'bg-green-500/10 text-green-700 border-green-500/20' :
                               task.status === 'doing' ? 'bg-blue-500/10 text-blue-700 border-blue-500/20' : 
                               'bg-gray-100 text-gray-700 border-gray-200'
@@ -454,13 +475,18 @@ export function ReviewProject({ project, onProjectConfirmed, onBack, onOpenSetti
                              task.status === 'doing' ? '进行中' : '待办'}
                           </Badge>
                         </div>
-                        <Badge variant="outline" className="text-xs bg-background">
+                        <Badge variant="outline" className="text-xs bg-background h-[30px] flex items-center justify-center">
                           {task.tag || feature.title || '未设置标签'}
                         </Badge>
-                        <Badge variant="outline" className="text-xs bg-background">
-                          {task.priority || '未设置优先级'}
-                        </Badge>
-                        <Badge variant="outline" className="text-xs bg-background">
+                        <div className="relative">
+                          <Badge 
+                            variant="outline" 
+                            className={`${task.priority ? getTaskPriorityColor(task.priority) : 'bg-gray-100 text-gray-800'} cursor-pointer h-[30px] flex items-center justify-center`}
+                          >
+                            {task.priority || '未设置优先级'}
+                          </Badge>
+                        </div>
+                        <Badge variant="outline" className="text-xs bg-background h-[30px] flex items-center justify-center">
                           {task.estimatedEndDate || '未设置日期'}
                         </Badge>
                         <Button

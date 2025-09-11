@@ -62,6 +62,8 @@ export default {
         kanban: {
           todo: "hsl(var(--kanban-todo))",
           doing: "hsl(var(--kanban-doing))",
+          testing: "hsl(var(--kanban-testing))",
+          fixing: "hsl(var(--kanban-fixing))",
           done: "hsl(var(--kanban-done))",
         },
       },

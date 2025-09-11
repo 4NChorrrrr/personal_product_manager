@@ -2,6 +2,15 @@
   "header": {
     "title": "Idea to board"
   },
+  "reviewProject": {
+    "priorityMust": "Must",
+    "priorityShould": "Should",
+    "priorityCould": "Could",
+    "priorityWont": "Won't",
+    "clearPriority": "Clear Priority",
+    "noPrioritySet": "No priority set",
+    "enterTag": "Enter tag"
+  },
   "projects": {
     "title": "Your Projects",
     "subtitle": "Manage your AI-generated project boards",
@@ -58,13 +67,21 @@
     "cancel": "Cancel",
     "todo": "To Do",
     "doing": "In Progress",
+    "testing": "Testing",
+    "fixing": "Fixing",
     "done": "Done",
     "back": "Back",
     "loading": "Loading project...",
     "feature": "Feature",
     "progress": "Progress",
     "tasksCompleted": "tasks completed",
-    "noTasks": "No tasks"
+    "noTasks": "No tasks",
+    "newTask": "New Task",
+    "addNewFeature": "Add New Feature",
+    "enterFeatureName": "Enter feature name",
+    "noDate": "No date set",
+    "status": "Status",
+    "priority": "Priority"
   },
   "settings": {
     "title": "AI Configuration",
@@ -85,12 +102,16 @@
     "apiEndpointPlaceholder": "API endpoint address",
     "apiKey": "API Key",
     "apiKeyPlaceholder": "Enter API key",
+    "testConnection": "Test Connection",
     "apiKeyValid": "API key format is correct",
     "apiKeyValidating": "Validating API key...",
     "apiKeyValidSuccess": "API key validation successful",
     "apiKeyValidError": "API key validation failed",
     "apiKeyFormatInvalid": "API key format is invalid",
     "apiKeyInvalid": "API key is invalid",
+    "apiKeyPingTest": "Testing connection...",
+    "apiKeyPingSuccess": "Connection test successful",
+    "apiKeyPingError": "Connection test failed",
     "unknownProvider": "Unknown model provider",
     "openaiKeyFormat": "OpenAI API key should start with 'sk-'",
     "anthropicKeyFormat": "Anthropic API key should start with 'sk-ant-'",
@@ -115,7 +136,21 @@
     "confirmDelete": "Are you sure you want to delete this task? This action cannot be undone.",
     "deleteWarning": "This action cannot be undone. All task data will be permanently removed.",
     "confirmCancel": "Are you sure you want to cancel without saving?",
-    "cancelWarning": "Your changes will be lost if you cancel without saving."
+    "cancelWarning": "Your changes will be lost if you cancel without saving.",
+    "noEstimatedEndDate": "No estimated end date",
+    "date": "Date",
+    "startDate": "Start date",
+    "setReminder": "Set reminder",
+    "selectReminder": "Select reminder time",
+    "noReminder": "No reminder",
+    "reminder15min": "15 minutes before",
+    "reminder1h": "1 hour before",
+    "reminder2h": "2 hours before",
+    "reminder1d": "1 day before",
+    "reminder2d": "2 days before",
+    "reminder1w": "1 week before",
+    "reminderDescription": "You will receive a notification at the specified time",
+    "remove": "Remove"
   },
   "common": {
     "save": "Save",

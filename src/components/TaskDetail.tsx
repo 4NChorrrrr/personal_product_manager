@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { Task, Project, Feature } from '@/types/project';
 import { getProject, saveProject } from '@/utils/storage';
 
-type TaskStatus = 'todo' | 'doing' | 'done';
+type TaskStatus = 'todo' | 'doing' | 'testing' | 'fixing' | 'done';
 
 export function TaskDetail() {
   const { t } = useTranslation();
@@ -52,14 +52,14 @@ export function TaskDetail() {
     
     const updatedTasks = project.tasks.map(t => 
       t.id === taskId 
-        ? { ...t, title: editedTitle, description: editedDescription, status: editedStatus, priority: editedPriority, estimatedEndDate: editedEstimatedEndDate, tag: editedTag }
+        ? { ...t, title: editedTitle, description: editedDescription, status: editedStatus, priority: editedPriority, estimatedEndDate: editedEstimatedEndDate, tag: editedTag, duration: t.duration }
         : t
     );
     
     const updatedProject = { ...project, tasks: updatedTasks };
     saveProject(updatedProject);
     setProject(updatedProject);
-    setTask({ ...task, title: editedTitle, description: editedDescription, status: editedStatus, priority: editedPriority, estimatedEndDate: editedEstimatedEndDate, tag: editedTag });
+    setTask({ ...task, title: editedTitle, description: editedDescription, status: editedStatus, priority: editedPriority, estimatedEndDate: editedEstimatedEndDate, tag: editedTag, duration: task.duration });
     setIsEditing(false);
     setIsEditingTitle(false);
     setIsEditingDescription(false);
@@ -263,10 +263,10 @@ export function TaskDetail() {
                     className="border rounded p-1"
                   >
                     <option value="">选择优先级</option>
-                    <option value="Must have">Must have</option>
-                    <option value="Should have">Should have</option>
-                    <option value="Could have">Could have</option>
-                    <option value="Won't have">Won't have</option>
+                    <option value={t('reviewProject.priorityMust')}>{t('reviewProject.priorityMust')}</option>
+                    <option value={t('reviewProject.priorityShould')}>{t('reviewProject.priorityShould')}</option>
+                    <option value={t('reviewProject.priorityCould')}>{t('reviewProject.priorityCould')}</option>
+                    <option value={t('reviewProject.priorityWont')}>{t('reviewProject.priorityWont')}</option>
                   </select>
                 ) : (
                   <Badge className={getTaskPriorityColor(task.priority || '')}>

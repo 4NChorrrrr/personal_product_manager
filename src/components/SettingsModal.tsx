@@ -189,6 +189,83 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
     }
   };
 
+  // Ping测试API密钥连接
+  const pingApiKeyConnection = async () => {
+    const apiKey = config.apiKey;
+    if (!apiKey || apiKey.trim() === '') {
+      setApiKeyValidation({ isValid: false, message: t('settings.apiKeyFormatInvalid') });
+      return;
+    }
+    
+    // 显示测试中消息
+    setApiKeyValidation({
+      isValid: null,
+      message: t('settings.apiKeyPingTest')
+    });
+    
+    try {
+      const provider = getModelProvider(config.selectedProvider!);
+      if (!provider) {
+        setApiKeyValidation({ isValid: false, message: t('settings.unknownProvider') });
+        return;
+      }
+      
+      // 构建ping请求
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      let requestBody: any = {
+        messages: [
+          {
+            role: 'user',
+            content: 'Ping'
+          }
+        ],
+        max_tokens: 5,
+      };
+      
+      // 根据供应商设置认证和请求体
+      if (provider.id === 'openai') {
+        headers['Authorization'] = `Bearer ${apiKey}`;
+        requestBody.model = config.selectedModel || 'gpt-3.5-turbo';
+      } else if (provider.id === 'anthropic') {
+        headers['x-api-key'] = apiKey;
+        headers['anthropic-version'] = '2023-06-01';
+        requestBody.model = config.selectedModel || 'claude-3-sonnet-20240229';
+        requestBody.max_tokens = 10;
+      } else {
+        // 其他供应商使用通用格式
+        headers['Authorization'] = `Bearer ${apiKey}`;
+        requestBody.model = config.selectedModel || 'default';
+      }
+      
+      const endpoint = config.customEndpoint || getDefaultEndpoint(config.selectedProvider!);
+      
+      // 发送ping请求
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(requestBody),
+      });
+      
+      if (response.ok) {
+        setApiKeyValidation({ isValid: true, message: t('settings.apiKeyPingSuccess') });
+      } else {
+        // 如果返回401，说明API密钥无效
+        if (response.status === 401) {
+          setApiKeyValidation({ isValid: false, message: t('settings.apiKeyInvalid') });
+        } else {
+          // 其他错误可能是网络问题或服务器问题
+          setApiKeyValidation({ isValid: false, message: t('settings.apiKeyPingError') });
+        }
+      }
+    } catch (error) {
+      console.error('API key ping test error:', error);
+      setApiKeyValidation({ isValid: false, message: t('settings.apiKeyPingError') });
+    }
+  };
+
   // 开始长按显示API密钥
   const startLongPress = () => {
     setShowApiKey(true);
@@ -376,6 +453,16 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                           {apiKeyValidation.message}
                         </div>
                       )}
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="sm" 
+                        className="mt-2"
+                        onClick={pingApiKeyConnection}
+                        disabled={!config.apiKey || config.apiKey.trim() === ''}
+                      >
+                        {t('settings.testConnection')}
+                      </Button>
                     </div>
                   )}
                 </div>

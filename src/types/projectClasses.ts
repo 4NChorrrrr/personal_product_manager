@@ -1,5 +1,5 @@
 // 定义任务状态类型
-export type TaskStatus = 'todo' | 'doing' | 'done';
+export type TaskStatus = 'todo' | 'doing' | 'testing' | 'fixing' | 'done';
 
 /**
  * 任务类
@@ -13,6 +13,7 @@ export class Task {
   priority?: string; // 遵循MoSCoW方法：Must have, Should have, Could have, Won't have
   tag?: string; // 父功能标题
   estimatedEndDate?: string; // 格式：YYYY-MM-DDTHH:mm
+  duration?: number; // 任务持续时间（小时）
   createdAt?: string;
   updatedAt?: string;
 
@@ -24,7 +25,8 @@ export class Task {
     description?: string,
     priority?: string,
     tag?: string,
-    estimatedEndDate?: string
+    estimatedEndDate?: string,
+    duration?: number
   ) {
     this.id = id;
     this.fid = fid.toString();
@@ -34,6 +36,7 @@ export class Task {
     this.priority = priority;
     this.tag = tag;
     this.estimatedEndDate = estimatedEndDate;
+    this.duration = duration;
     this.createdAt = new Date().toISOString();
     this.updatedAt = new Date().toISOString();
   }
@@ -93,6 +96,15 @@ export class Task {
   }
 
   /**
+   * 更新任务持续时间
+   * @param duration 新持续时间（小时）
+   */
+  updateDuration(duration: number): void {
+    this.duration = duration;
+    this.updatedAt = new Date().toISOString();
+  }
+
+  /**
    * 将任务对象转换为普通对象，用于JSON序列化
    * @returns 普通对象
    */
@@ -106,6 +118,7 @@ export class Task {
       priority: this.priority,
       tag: this.tag,
       estimatedEndDate: this.estimatedEndDate,
+      duration: this.duration,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt
     };

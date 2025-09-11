@@ -12,14 +12,19 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ArrowLeft, MoreVertical, CheckCircle, Circle, Clock, Edit, X, Trash2, Move, Calendar } from 'lucide-react';
+import { ArrowLeft, MoreVertical, CheckCircle, Circle, Clock, Edit, X, Trash2, Move, Calendar, Bug, TestTube, Wrench } from 'lucide-react';
 import { Project, Task } from '../types/project';
 import { getProject, saveProject } from '../utils/storage';
-import { DateTimePicker } from '@/components/ui/datetime-picker';
+import { DateTimePicker as UIDateTimePicker } from '@/components/ui/datetime-picker';
+import { TaskDateTimePicker } from '@/components/TaskDateTimePicker';
+
 import { format } from 'date-fns';
 
-type TaskStatus = 'todo' | 'doing' | 'done';
+type TaskStatus = 'todo' | 'doing' | 'testing' | 'fixing' | 'done';
 
 interface KanbanBoardProps {
   projectId: string;
@@ -37,6 +42,29 @@ interface TaskDetailModalProps {
 
 function TaskDetailModal({ project, task, onClose, onUpdate, onDelete, onMoveTask }: TaskDetailModalProps) {
   const { t } = useTranslation();
+  
+  // 辅助函数：获取任务优先级颜色
+  const getTaskPriorityColor = (priority?: string) => {
+    switch (priority) {
+      case t('reviewProject.priorityMust'): return 'bg-red-100 text-red-800';
+      case t('reviewProject.priorityShould'): return 'bg-orange-100 text-orange-800';
+      case t('reviewProject.priorityCould'): return 'bg-blue-100 text-blue-800';
+      case t('reviewProject.priorityWont'): return 'bg-gray-100 text-gray-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+  
+  // 辅助函数：获取任务优先级颜色条颜色
+  const getTaskPriorityColorBarColor = (priority?: string) => {
+    switch (priority) {
+      case t('reviewProject.priorityMust'): return 'bg-red-500';
+      case t('reviewProject.priorityShould'): return 'bg-orange-500';
+      case t('reviewProject.priorityCould'): return 'bg-blue-500';
+      case t('reviewProject.priorityWont'): return 'bg-gray-500';
+      default: return 'bg-gray-300';
+    }
+  };
+  
   const [isEditing, setIsEditing] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [isEditingDescription, setIsEditingDescription] = useState(false);
@@ -49,32 +77,39 @@ function TaskDetailModal({ project, task, onClose, onUpdate, onDelete, onMoveTas
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [descriptionChanged, setDescriptionChanged] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [priorityDropdownOpen, setPriorityDropdownOpen] = useState(false);
+  const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
+  const [showEndDateDropdown, setShowEndDateDropdown] = useState(false);
+  const [featureDropdownOpen, setFeatureDropdownOpen] = useState(false);
+  const [newFeatureInputOpen, setNewFeatureInputOpen] = useState(false);
+  const [newFeatureTitle, setNewFeatureTitle] = useState('');
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const updatedTask = { 
       ...task, 
       title: editedTitle, 
       description: editedDescription, 
       status: editedStatus, 
       tag: editedTag,
-      estimatedEndDate: editedEndDate
+      estimatedEndDate: editedEndDate,
+      duration: task.duration
     };
-    onUpdate(updatedTask);
+    await onUpdate(updatedTask);
     setIsEditing(false);
     setIsEditingTitle(false);
     setIsEditingDescription(false);
     setIsEditingEndDate(false);
   };
 
-  const handleSaveTitle = () => {
+  const handleSaveTitle = async () => {
     const updatedTask = { ...task, title: editedTitle };
-    onUpdate(updatedTask);
+    await onUpdate(updatedTask);
     setIsEditingTitle(false);
   };
 
-  const handleSaveDescription = () => {
+  const handleSaveDescription = async () => {
     const updatedTask = { ...task, description: editedDescription };
-    onUpdate(updatedTask);
+    await onUpdate(updatedTask);
     setIsEditingDescription(false);
     setDescriptionChanged(false);
   };
@@ -104,8 +139,8 @@ function TaskDetailModal({ project, task, onClose, onUpdate, onDelete, onMoveTas
     setShowDeleteConfirm(true);
   };
 
-  const confirmDelete = () => {
-    onDelete(task.id);
+  const confirmDelete = async () => {
+    await onDelete(task.id);
     setShowDeleteConfirm(false);
   };
 
@@ -113,22 +148,81 @@ function TaskDetailModal({ project, task, onClose, onUpdate, onDelete, onMoveTas
     setShowDeleteConfirm(false);
   };
 
-  const getFeatureTitle = (fid: number) => {
-    const feature = project.features.find(f => f.id === fid);
+  const handlePriorityChange = async (newPriority?: string) => {
+    const updatedTask = { ...task, priority: newPriority };
+    await onUpdate(updatedTask);
+    setPriorityDropdownOpen(false);
+  };
+
+  const handleStatusChange = async (newStatus: TaskStatus) => {
+    const updatedTask = { ...task, status: newStatus, duration: task.duration };
+    await onUpdate(updatedTask);
+    setStatusDropdownOpen(false);
+  };
+
+  const handleSaveEndDate = async () => {
+    const updatedTask = { ...task, estimatedEndDate: editedEndDate };
+    await onUpdate(updatedTask);
+  };
+
+  const handleFeatureChange = async (newFeatureId: number) => {
+    const updatedTask = { ...task, feature_id: newFeatureId };
+    await onUpdate(updatedTask);
+    setFeatureDropdownOpen(false);
+  };
+
+  const handleAddNewFeature = () => {
+    setNewFeatureInputOpen(true);
+    setFeatureDropdownOpen(false);
+  };
+
+  const handleCreateNewFeature = async () => {
+    if (!newFeatureTitle.trim()) return;
+    
+    // 创建新功能
+    const newFeature = {
+      id: Math.max(0, ...project.features.map(f => f.id)) + 1,
+      title: newFeatureTitle.trim()
+    };
+    
+    // 更新项目
+    const updatedProject = {
+      ...project,
+      features: [...project.features, newFeature]
+    };
+    
+    // 更新任务的功能ID
+    const updatedTask = { ...task, feature_id: newFeature.id };
+    
+    // 保存更改
+    await onUpdate(updatedTask);
+    
+    // 重置状态
+    setNewFeatureTitle('');
+    setNewFeatureInputOpen(false);
+  };
+
+  const handleCancelNewFeature = () => {
+    setNewFeatureTitle('');
+    setNewFeatureInputOpen(false);
+  };
+
+  const getFeatureTitle = (feature_id: number) => {
+    const feature = project.features.find(f => f.id === feature_id);
     return feature?.title || t('kanban.feature');
   };
 
-  const getFeaturePriority = (fid: number) => {
+  const getFeaturePriority = (feature_id: number) => {
     // Feature接口已移除priority属性，返回空字符串
     return '';
   };
 
   const getFeaturePriorityColor = (priority: string) => {
     switch (priority) {
-      case 'Must have': return 'bg-red-100 text-red-800';
-      case 'Should have': return 'bg-orange-100 text-orange-800';
-      case 'Could have': return 'bg-blue-100 text-blue-800';
-      case "Won't have": return 'bg-gray-100 text-gray-800';
+      case t('reviewProject.priorityMust'): return 'bg-red-100 text-red-800';
+      case t('reviewProject.priorityShould'): return 'bg-orange-100 text-orange-800';
+      case t('reviewProject.priorityCould'): return 'bg-blue-100 text-blue-800';
+      case t('reviewProject.priorityWont'): return 'bg-gray-100 text-gray-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -137,6 +231,8 @@ function TaskDetailModal({ project, task, onClose, onUpdate, onDelete, onMoveTas
     switch (status) {
       case 'todo': return 'bg-gray-100 text-gray-800';
       case 'doing': return 'bg-blue-100 text-blue-800';
+      case 'testing': return 'bg-purple-100 text-purple-800';
+      case 'fixing': return 'bg-red-100 text-red-800';
       case 'done': return 'bg-green-100 text-green-800';
       default: return 'bg-gray-100 text-gray-800';
     }
@@ -146,6 +242,8 @@ function TaskDetailModal({ project, task, onClose, onUpdate, onDelete, onMoveTas
     switch (status) {
       case 'todo': return t('kanban.todo');
       case 'doing': return t('kanban.doing');
+      case 'testing': return t('kanban.testing');
+      case 'fixing': return t('kanban.fixing');
       case 'done': return t('kanban.done');
       default: return status;
     }
@@ -153,13 +251,68 @@ function TaskDetailModal({ project, task, onClose, onUpdate, onDelete, onMoveTas
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        {/* Modal Header */}
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[60vh] overflow-y-auto">
+        {/* 任务详情弹窗标题 */}
         <div className="sticky top-0 bg-white border-b p-4 flex items-center justify-between z-10">
           <div className="flex items-center space-x-2">
-            <Badge variant="outline" className="bg-primary-light text-primary border-primary/20">
-              {getFeatureTitle(task.fid)}
-            </Badge>
+            <div className="relative">
+              <Badge
+                variant="outline"
+                className="bg-primary-light text-primary border-primary/20 cursor-pointer h-[30px] flex items-center justify-center"
+                onClick={() => setFeatureDropdownOpen(!featureDropdownOpen)}
+              >
+                {getFeatureTitle(task.fid)}
+              </Badge>
+              {featureDropdownOpen && (
+                <div className="absolute z-10 mt-1 w-48 bg-white border border-gray-200 rounded-md shadow-lg">
+                  <div className="py-1">
+                    {project.features.map((feature) => (
+                      <button
+                        key={feature.id}
+                        className={`block w-full text-left px-3 py-1 text-sm ${task.fid === feature.id ? 'bg-blue-100 text-blue-800' : 'text-gray-700 hover:bg-gray-100'}`}
+                        onClick={() => handleFeatureChange(feature.id)}
+                      >
+                        {feature.title}
+                      </button>
+                    ))}
+                    <div className="border-t border-gray-200 my-1"></div>
+                    <button
+                      className="block w-full text-left px-3 py-1 text-sm text-green-600 hover:bg-gray-100"
+                      onClick={handleAddNewFeature}
+                    >
+                      + {t('kanban.addNewFeature')}
+                    </button>
+                  </div>
+                </div>
+              )}
+              {newFeatureInputOpen && (
+                <div className="absolute z-10 mt-1 w-64 bg-white border border-gray-200 rounded-md shadow-lg p-3">
+                  <input
+                    type="text"
+                    value={newFeatureTitle}
+                    onChange={(e) => setNewFeatureTitle(e.target.value)}
+                    placeholder={t('kanban.enterFeatureName')}
+                    className="w-full p-2 border rounded mb-2"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        handleCreateNewFeature();
+                      } else if (e.key === 'Escape') {
+                        handleCancelNewFeature();
+                      }
+                    }}
+                  />
+                  <div className="flex justify-end space-x-2">
+                    <Button variant="outline" size="sm" onClick={handleCancelNewFeature}>
+                      {t('common.cancel')}
+                    </Button>
+                    <Button size="sm" onClick={handleCreateNewFeature}>
+                      {t('common.add')}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
             {getFeaturePriority(task.fid) && (
               <Badge 
                 variant="outline" 
@@ -186,18 +339,66 @@ function TaskDetailModal({ project, task, onClose, onUpdate, onDelete, onMoveTas
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => onMoveTask(task.id, 'todo')} className={task.status === 'todo' ? 'bg-gray-100' : ''}>
-                      <Circle className={`h-4 w-4 mr-2 ${task.status === 'todo' ? 'text-gray-700' : 'text-gray-400'}`} />
-                      {t('kanban.todo')}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onMoveTask(task.id, 'doing')} className={task.status === 'doing' ? 'bg-blue-100' : ''}>
-                      <Clock className={`h-4 w-4 mr-2 ${task.status === 'doing' ? 'text-blue-700' : 'text-yellow-500'}`} />
-                      {t('kanban.doing')}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onMoveTask(task.id, 'done')} className={task.status === 'done' ? 'bg-green-100' : ''}>
-                      <CheckCircle className={`h-4 w-4 mr-2 ${task.status === 'done' ? 'text-green-700' : 'text-green-500'}`} />
-                      {t('kanban.done')}
-                    </DropdownMenuItem>
+                    <DropdownMenuSub>
+                      <DropdownMenuSubTrigger>
+                        <Circle className="h-4 w-4 mr-2 text-gray-500" />
+                        {t('kanban.status')}
+                      </DropdownMenuSubTrigger>
+                      <DropdownMenuSubContent>
+                        <DropdownMenuItem onClick={() => onMoveTask(task.id, 'todo')} className={task.status === 'todo' ? 'bg-gray-100' : ''}>
+                          <Circle className={`h-4 w-4 mr-2 ${task.status === 'todo' ? 'text-gray-700' : 'text-gray-400'}`} />
+                          {t('kanban.todo')}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onMoveTask(task.id, 'doing')} className={task.status === 'doing' ? 'bg-blue-100' : ''}>
+                          <Clock className={`h-4 w-4 mr-2 ${task.status === 'doing' ? 'text-blue-700' : 'text-yellow-500'}`} />
+                          {t('kanban.doing')}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onMoveTask(task.id, 'testing')} className={task.status === 'testing' ? 'bg-purple-100' : ''}>
+                          <TestTube className={`h-4 w-4 mr-2 ${task.status === 'testing' ? 'text-purple-700' : 'text-blue-500'}`} />
+                          {t('kanban.testing')}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onMoveTask(task.id, 'fixing')} className={task.status === 'fixing' ? 'bg-red-100' : ''}>
+                          <Bug className={`h-4 w-4 mr-2 ${task.status === 'fixing' ? 'text-red-700' : 'text-red-500'}`} />
+                          {t('kanban.fixing')}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onMoveTask(task.id, 'done')} className={task.status === 'done' ? 'bg-green-100' : ''}>
+                          <CheckCircle className={`h-4 w-4 mr-2 ${task.status === 'done' ? 'text-green-700' : 'text-green-500'}`} />
+                          {t('kanban.done')}
+                        </DropdownMenuItem>
+                      </DropdownMenuSubContent>
+                    </DropdownMenuSub>
+                    <DropdownMenuSub>
+                      <DropdownMenuSubTrigger>
+                        <span className="inline-block w-3 h-3 bg-gray-500 rounded-full mr-2"></span>
+                        {t('kanban.priority')}
+                      </DropdownMenuSubTrigger>
+                      <DropdownMenuSubContent>
+                        <DropdownMenuItem onClick={() => handlePriorityChange(t('reviewProject.priorityMust'))}>
+                          <span className="inline-block w-3 h-3 bg-red-500 rounded-full mr-2"></span>
+                          {t('reviewProject.priorityMust')}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handlePriorityChange(t('reviewProject.priorityShould'))}>
+                          <span className="inline-block w-3 h-3 bg-orange-500 rounded-full mr-2"></span>
+                          {t('reviewProject.priorityShould')}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handlePriorityChange(t('reviewProject.priorityCould'))}>
+                          <span className="inline-block w-3 h-3 bg-blue-500 rounded-full mr-2"></span>
+                          {t('reviewProject.priorityCould')}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handlePriorityChange(t('reviewProject.priorityWont'))}>
+                          <span className="inline-block w-3 h-3 bg-gray-500 rounded-full mr-2"></span>
+                          {t('reviewProject.priorityWont')}
+                        </DropdownMenuItem>
+                        {task.priority && (
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => handlePriorityChange(undefined)}>
+                              {t('reviewProject.clearPriority')}
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                      </DropdownMenuSubContent>
+                    </DropdownMenuSub>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleDelete} className="text-red-600">
                       <Trash2 className="h-4 w-4 mr-2" />
@@ -213,7 +414,7 @@ function TaskDetailModal({ project, task, onClose, onUpdate, onDelete, onMoveTas
           </div>
         </div>
 
-        {/* Modal Content */}
+        {/* 任务详情内容 */}
         <div className="p-6">
           <div className="mb-6">
             {isEditingTitle || isEditing ? (
@@ -248,25 +449,145 @@ function TaskDetailModal({ project, task, onClose, onUpdate, onDelete, onMoveTas
                 >
                   <option value="todo">{t('kanban.todo')}</option>
                   <option value="doing">{t('kanban.doing')}</option>
+                  <option value="testing">{t('kanban.testing')}</option>
+                  <option value="fixing">{t('kanban.fixing')}</option>
                   <option value="done">{t('kanban.done')}</option>
                 </select>
               ) : (
-                <Badge className={getStatusColor(task.status)}>
-                  {getStatusText(task.status)}
-                </Badge>
+                <div className="relative">
+                  <Badge 
+                    className={`${getStatusColor(task.status)} cursor-pointer h-[30px] flex items-center justify-center`}
+                    onClick={() => setStatusDropdownOpen(!statusDropdownOpen)}
+                  >
+                    {getStatusText(task.status)}
+                  </Badge>
+                  {statusDropdownOpen && (
+                    <div className="absolute z-10 mt-1 w-32 bg-white border border-gray-200 rounded-md shadow-lg">
+                      <div className="py-1">
+                        <button
+                          className="block w-full text-left px-3 py-1 text-sm text-gray-700 hover:bg-gray-100"
+                          onClick={() => handleStatusChange('todo')}
+                        >
+                          <Circle className="inline-block h-3 w-3 mr-2 text-gray-500" />
+                          {t('kanban.todo')}
+                        </button>
+                        <button
+                          className="block w-full text-left px-3 py-1 text-sm text-gray-700 hover:bg-gray-100"
+                          onClick={() => handleStatusChange('doing')}
+                        >
+                          <Clock className="inline-block h-3 w-3 mr-2 text-yellow-500" />
+                          {t('kanban.doing')}
+                        </button>
+                        <button
+                          className="block w-full text-left px-3 py-1 text-sm text-gray-700 hover:bg-gray-100"
+                          onClick={() => handleStatusChange('testing')}
+                        >
+                          <TestTube className="inline-block h-3 w-3 mr-2 text-blue-500" />
+                          {t('kanban.testing')}
+                        </button>
+                        <button
+                          className="block w-full text-left px-3 py-1 text-sm text-gray-700 hover:bg-gray-100"
+                          onClick={() => handleStatusChange('fixing')}
+                        >
+                          <Bug className="inline-block h-3 w-3 mr-2 text-red-500" />
+                          {t('kanban.fixing')}
+                        </button>
+                        <button
+                          className="block w-full text-left px-3 py-1 text-sm text-gray-700 hover:bg-gray-100"
+                          onClick={() => handleStatusChange('done')}
+                        >
+                          <CheckCircle className="inline-block h-3 w-3 mr-2 text-green-500" />
+                          {t('kanban.done')}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               )}
               {isEditing ? (
                 <input
                   type="text"
                   value={editedTag}
                   onChange={(e) => setEditedTag(e.target.value)}
-                  placeholder="输入标签"
+                  placeholder={t('reviewProject.enterTag')}
                   className="border rounded p-1"
                 />
               ) : (
-                <Badge variant="outline">
-                  {task.tag || '未设置标签'}
-                </Badge>
+                <div className="relative">
+                  <Badge 
+                    variant="outline" 
+                    className={`${task.priority ? getTaskPriorityColor(task.priority) : 'bg-gray-100 text-gray-800'} cursor-pointer h-[30px] flex items-center justify-center`}
+                    onClick={() => setPriorityDropdownOpen(!priorityDropdownOpen)}
+                  >
+                    {task.priority || t('reviewProject.noPrioritySet')}
+                  </Badge>
+                  {priorityDropdownOpen && (
+                    <div className="absolute z-10 mt-1 w-32 bg-white border border-gray-200 rounded-md shadow-lg">
+                      <div className="py-1">
+                        <button
+                          className="block w-full text-left px-3 py-1 text-sm text-gray-700 hover:bg-gray-100"
+                          onClick={() => handlePriorityChange(t('reviewProject.priorityMust'))}
+                        >
+                          <span className="inline-block w-3 h-3 bg-red-500 rounded-full mr-2"></span>
+                          {t('reviewProject.priorityMust')}
+                        </button>
+                        <button
+                          className="block w-full text-left px-3 py-1 text-sm text-gray-700 hover:bg-gray-100"
+                          onClick={() => handlePriorityChange(t('reviewProject.priorityShould'))}
+                        >
+                          <span className="inline-block w-3 h-3 bg-orange-500 rounded-full mr-2"></span>
+                          {t('reviewProject.priorityShould')}
+                        </button>
+                        <button
+                          className="block w-full text-left px-3 py-1 text-sm text-gray-700 hover:bg-gray-100"
+                          onClick={() => handlePriorityChange(t('reviewProject.priorityCould'))}
+                        >
+                          <span className="inline-block w-3 h-3 bg-blue-500 rounded-full mr-2"></span>
+                          {t('reviewProject.priorityCould')}
+                        </button>
+                        <button
+                          className="block w-full text-left px-3 py-1 text-sm text-gray-700 hover:bg-gray-100"
+                          onClick={() => handlePriorityChange(t('reviewProject.priorityWont'))}
+                        >
+                          <span className="inline-block w-3 h-3 bg-gray-500 rounded-full mr-2"></span>
+                          {t('reviewProject.priorityWont')}
+                        </button>
+                        {task.priority && (
+                          <button
+                            className="block w-full text-left px-3 py-1 text-sm text-gray-700 hover:bg-gray-100 border-t border-gray-200"
+                            onClick={() => handlePriorityChange(undefined)}
+                          >
+                            {t('reviewProject.clearPriority')}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {/* 任务结束时间标签 */}
+              {isEditingEndDate || isEditing ? (
+                <UIDateTimePicker
+                  value={editedEndDate}
+                  onChange={(date) => setEditedEndDate(date)}
+                  className="ml-2"
+                />
+              ) : (
+                <div className="relative ml-2">
+                  <TaskDateTimePicker
+                    value={task.estimatedEndDate}
+                    onChange={(date) => {
+                      setEditedEndDate(date);
+                      handleSaveEndDate();
+                    }}
+                    onRemove={() => {
+                      setEditedEndDate(null);
+                      handleSaveEndDate();
+                    }}
+                    className={`inline-flex items-center justify-center h-[30px] px-2 rounded-full border text-xs ${task.estimatedEndDate ? 'bg-blue-100 text-blue-800 border-blue-200' : 'bg-gray-100 text-gray-800 border-gray-200'}`}
+                  />
+                </div>
               )}
             </div>
           </div>
@@ -304,32 +625,9 @@ function TaskDetailModal({ project, task, onClose, onUpdate, onDelete, onMoveTas
               </p>
             )}
           </div>
-
-          <div className="mt-6">
-            <div className="flex items-center mb-2">
-              <Calendar className="h-5 w-5 mr-2 text-muted-foreground" />
-              <h4 className="text-lg font-medium">{t('taskDetail.endDate')}</h4>
-            </div>
-            {isEditingEndDate || isEditing ? (
-              <DateTimePicker
-                value={editedEndDate}
-                onChange={(date) => setEditedEndDate(date)}
-                className="w-full"
-              />
-            ) : (
-              <div 
-                className="text-muted-foreground cursor-pointer hover:bg-gray-100 p-1 rounded"
-                onClick={() => setIsEditingEndDate(true)}
-              >
-                {task.estimatedEndDate 
-                  ? format(new Date(task.estimatedEndDate), 'yyyy-MM-dd HH:mm')
-                  : '1970/01/01 08:00'}
-              </div>
-            )}
-          </div>
         </div>
 
-        {/* Cancel Confirmation Dialog */}
+        {/* 取消确认弹窗 */}
         {showCancelConfirm && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 max-w-md w-full">
@@ -349,7 +647,7 @@ function TaskDetailModal({ project, task, onClose, onUpdate, onDelete, onMoveTas
           </div>
         )}
 
-        {/* Delete Confirmation Dialog */}
+        {/* 删除确认弹窗 */}
         {showDeleteConfirm && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 max-w-md w-full">
@@ -386,6 +684,18 @@ const columnConfig = {
     icon: Clock,
     iconColor: 'text-yellow-500'
   },
+  testing: {
+    titleKey: 'kanban.testing',
+    bgColor: 'bg-kanban-testing',
+    icon: TestTube,
+    iconColor: 'text-blue-500'
+  },
+  fixing: {
+    titleKey: 'kanban.fixing',
+    bgColor: 'bg-kanban-fixing',
+    icon: Bug,
+    iconColor: 'text-red-500'
+  },
   done: {
     titleKey: 'kanban.done',
     bgColor: 'bg-kanban-done',
@@ -397,21 +707,72 @@ const columnConfig = {
 export function KanbanBoard({ projectId, onBack }: KanbanBoardProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  
+  // 辅助函数：获取任务优先级颜色
+  const getTaskPriorityColor = (priority?: string) => {
+    switch (priority) {
+      case t('reviewProject.priorityMust'): return 'bg-red-100 text-red-800';
+      case t('reviewProject.priorityShould'): return 'bg-orange-100 text-orange-800';
+      case t('reviewProject.priorityCould'): return 'bg-blue-100 text-blue-800';
+      case t('reviewProject.priorityWont'): return 'bg-gray-100 text-gray-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+  
+  // 辅助函数：获取任务优先级颜色条颜色
+  const getTaskPriorityColorBarColor = (priority?: string) => {
+    switch (priority) {
+      case t('reviewProject.priorityMust'): return 'bg-red-500';
+      case t('reviewProject.priorityShould'): return 'bg-orange-500';
+      case t('reviewProject.priorityCould'): return 'bg-blue-500';
+      case t('reviewProject.priorityWont'): return 'bg-gray-500';
+      default: return 'bg-gray-300';
+    }
+  };
+  
   const [project, setProject] = useState<Project | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [selectedTask, setSelectedTask] = useState<{ project: Project; task: Task } | null>(null);
+  const [priorityDropdownOpen, setPriorityDropdownOpen] = useState<string | null>(null); // 存储打开下拉列表的任务ID
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadProject = () => {
-      const loadedProject = getProject(projectId);
-      if (loadedProject) {
-        setProject(loadedProject);
-        setTasks(loadedProject.tasks);
+    const loadProject = async () => {
+      try {
+        // 首先尝试从正式数据库加载项目
+        const loadedProject = await getProject(projectId);
+        if (loadedProject) {
+          setProject(loadedProject);
+          setTasks(loadedProject.tasks);
+        } else {
+          // 如果正式项目中不存在，重定向到项目列表
+          navigate('/');
+          return;
+        }
+      } catch (error) {
+        console.error('Failed to load project from database:', error);
+        // 如果从数据库加载失败，尝试从localStorage加载
+        try {
+          const projects = JSON.parse(localStorage.getItem('ai-kanban-projects') || '[]');
+          const localProject = projects.find(p => p.id === projectId);
+          if (localProject) {
+            setProject(localProject);
+            setTasks(localProject.tasks);
+          } else {
+            // 如果localStorage中也不存在，重定向到项目列表
+            navigate('/');
+          }
+        } catch (localError) {
+          console.error('Failed to load project from localStorage:', localError);
+          navigate('/');
+        }
+      } finally {
+        setLoading(false);
       }
     };
     
     loadProject();
-  }, [projectId]);
+  }, [projectId, navigate]);
 
   const getProgress = () => {
     if (tasks.length === 0) return 0;
@@ -423,46 +784,40 @@ export function KanbanBoard({ projectId, onBack }: KanbanBoardProps) {
     return tasks.filter(task => task.status === status);
   };
 
-  const getFeatureTitle = (fid: number) => {
-    const feature = project?.features.find(f => f.id === fid);
+  const getFeatureTitle = (feature_id: number) => {
+    const feature = project?.features.find(f => f.id === feature_id);
     return feature?.title || t('kanban.feature');
   };
 
-  const getTaskPriorityColor = (priority?: string) => {
-    switch (priority) {
-      case 'Must have': return 'bg-red-100 text-red-800';
-      case 'Should have': return 'bg-orange-100 text-orange-800';
-      case 'Could have': return 'bg-blue-100 text-blue-800';
-      case "Won't have": return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
 
-  const handlePriorityChange = (taskId: string, currentPriority?: string) => {
+
+  const handlePriorityChange = async (taskId: string, newPriority?: string) => {
     if (!project) return;
     
-    // 定义优先级循环顺序
-    const priorities = ['Must have', 'Should have', 'Could have', "Won't have"];
-    
-    // 找到当前优先级的索引，如果没有优先级则从第一个开始
-    const currentIndex = currentPriority ? priorities.indexOf(currentPriority) : -1;
-    const nextIndex = (currentIndex + 1) % priorities.length;
-    const newPriority = priorities[nextIndex];
+    // 如果没有提供新的优先级，则不进行更改
+    if (newPriority === undefined) return;
     
     // 更新任务优先级
     const updatedTasks = tasks.map(t => 
-      t.id === taskId ? { ...t, priority: newPriority } : t
+      t.id === taskId ? (newPriority === undefined ? { ...t, priority: undefined } : { ...t, priority: newPriority }) : t
     );
     
     setTasks(updatedTasks);
     
-    // 保存到localStorage
+    // 保存到数据库
     const updatedProject = {
       ...project,
       tasks: updatedTasks
     };
-    saveProject(updatedProject);
-    setProject(updatedProject);
+    
+    try {
+      await saveProject(updatedProject);
+      setProject(updatedProject);
+    } catch (error) {
+      console.error('Failed to save project:', error);
+      // 如果保存失败，恢复原始任务列表
+      setTasks(tasks);
+    }
     
     // 如果当前选中的任务是被修改的任务，更新选中任务的优先级
     if (selectedTask && selectedTask.task.id === taskId) {
@@ -473,7 +828,7 @@ export function KanbanBoard({ projectId, onBack }: KanbanBoardProps) {
     }
   };
 
-  const handleDragEnd = (result: any) => {
+  const handleDragEnd = async (result: any) => {
     if (!result.destination || !project) {
       return;
     }
@@ -481,26 +836,33 @@ export function KanbanBoard({ projectId, onBack }: KanbanBoardProps) {
     const { source, destination, draggableId } = result;
     
     if (source.droppableId === destination.droppableId) {
-      return; // Same column, no change needed
+      return; // 相同列，无需更新
     }
 
-    // Update task status
+    // 更新任务状态
     const newStatus = destination.droppableId as Task['status'];
     const updatedTasks = tasks.map(task =>
       task.id === draggableId
-        ? { ...task, status: newStatus }
+        ? { ...task, status: newStatus, duration: task.duration }
         : task
     );
 
     setTasks(updatedTasks);
 
-    // Save to localStorage
+    // 保存到数据库
     const updatedProject = {
       ...project,
       tasks: updatedTasks
     };
-    saveProject(updatedProject);
-    setProject(updatedProject);
+    
+    try {
+      await saveProject(updatedProject);
+      setProject(updatedProject);
+    } catch (error) {
+      console.error('Failed to save project:', error);
+      // 如果保存失败，恢复原始任务列表
+      setTasks(tasks);
+    }
   };
 
   const handleTaskClick = (task: Task) => {
@@ -509,11 +871,51 @@ export function KanbanBoard({ projectId, onBack }: KanbanBoardProps) {
     }
   };
 
+  const handleAddTask = async (status: Task['status']) => {
+    if (!project) return;
+    
+    // 创建新任务
+    const newTask: Task = {
+      id: `task-${Date.now()}`,
+      title: t('kanban.newTask'),
+      description: '',
+      status: status,
+      fid: project.features.length > 0 ? project.features[0].id : 1, // 默认使用第一个功能
+      estimatedEndDate: undefined,
+      tag: '',
+      priority: undefined,
+      duration: 0
+    };
+    
+    // 添加到任务列表
+    const updatedTasks = [...tasks, newTask];
+    setTasks(updatedTasks);
+    
+    // 保存到数据库
+    const updatedProject = {
+      ...project,
+      tasks: updatedTasks
+    };
+    
+    try {
+      await saveProject(updatedProject);
+      setProject(updatedProject);
+    } catch (error) {
+      console.error('Failed to save project:', error);
+      // 如果保存失败，恢复原始任务列表
+      setTasks(tasks);
+      return;
+    }
+    
+    // 打开任务详情弹窗
+    setSelectedTask({ project: updatedProject, task: newTask });
+  };
+
   const handleCloseTaskDetail = () => {
     setSelectedTask(null);
   };
 
-  const handleUpdateTask = (updatedTask: Task) => {
+  const handleUpdateTask = async (updatedTask: Task) => {
     if (!project || !selectedTask) return;
     
     const updatedTasks = tasks.map(t => 
@@ -526,8 +928,16 @@ export function KanbanBoard({ projectId, onBack }: KanbanBoardProps) {
       ...project,
       tasks: updatedTasks
     };
-    saveProject(updatedProject);
-    setProject(updatedProject);
+    
+    try {
+      await saveProject(updatedProject);
+      setProject(updatedProject);
+    } catch (error) {
+      console.error('Failed to save project:', error);
+      // 如果保存失败，恢复原始任务列表
+      setTasks(tasks);
+      return;
+    }
     
     setSelectedTask({
       project: updatedProject,
@@ -535,11 +945,11 @@ export function KanbanBoard({ projectId, onBack }: KanbanBoardProps) {
     });
   };
 
-  const handleMoveTask = (taskId: string, newStatus: TaskStatus) => {
+  const handleMoveTask = async (taskId: string, newStatus: TaskStatus) => {
     if (!project) return;
     
     const updatedTasks = tasks.map(t => 
-      t.id === taskId ? { ...t, status: newStatus } : t
+      t.id === taskId ? { ...t, status: newStatus, duration: t.duration } : t
     );
     
     setTasks(updatedTasks);
@@ -548,21 +958,30 @@ export function KanbanBoard({ projectId, onBack }: KanbanBoardProps) {
       ...project,
       tasks: updatedTasks
     };
-    saveProject(updatedProject);
-    setProject(updatedProject);
+    
+    try {
+      await saveProject(updatedProject);
+      setProject(updatedProject);
+    } catch (error) {
+      console.error('Failed to save project:', error);
+      // 如果保存失败，恢复原始任务列表
+      setTasks(tasks);
+      return;
+    }
     
     // 如果当前选中的任务是被移动的任务，更新选中任务的状态
     if (selectedTask && selectedTask.task.id === taskId) {
       setSelectedTask({
         project: updatedProject,
-        task: { ...selectedTask.task, status: newStatus }
+        task: { ...selectedTask.task, status: newStatus, duration: selectedTask.task.duration }
       });
     }
   };
 
-  const handleDeleteTask = (taskId: string) => {
+  const handleDeleteTask = async (taskId: string) => {
     if (!project) return;
     
+    const originalTasks = [...tasks];
     const updatedTasks = tasks.filter(t => t.id !== taskId);
     setTasks(updatedTasks);
     
@@ -570,13 +989,21 @@ export function KanbanBoard({ projectId, onBack }: KanbanBoardProps) {
       ...project,
       tasks: updatedTasks
     };
-    saveProject(updatedProject);
-    setProject(updatedProject);
+    
+    try {
+      await saveProject(updatedProject);
+      setProject(updatedProject);
+    } catch (error) {
+      console.error('Failed to save project:', error);
+      // 如果保存失败，恢复原始任务列表
+      setTasks(originalTasks);
+      return;
+    }
     
     setSelectedTask(null);
   };
 
-  if (!project) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -588,7 +1015,7 @@ export function KanbanBoard({ projectId, onBack }: KanbanBoardProps) {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
+      {/* 看板标题 */}
       <div className="bg-white border-b shadow-sm sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
@@ -609,7 +1036,7 @@ export function KanbanBoard({ projectId, onBack }: KanbanBoardProps) {
             </Button>
           </div>
           
-          {/* Progress Bar */}
+          {/* 看板进度 */}
           <div className="mt-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium">{t('kanban.progress')}</span>
@@ -622,17 +1049,17 @@ export function KanbanBoard({ projectId, onBack }: KanbanBoardProps) {
         </div>
       </div>
 
-      {/* Kanban Board */}
-      <div className="max-w-7xl mx-auto p-6">
+      {/* 看板 */}
+      <div className="w-fit mx-auto py-6 px-[150px]">
         <DragDropContext onDragEnd={handleDragEnd}>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-5 lg:gap-x-3 gap-3 lg:w-[calc(100%+3.5rem)]">
             {Object.entries(columnConfig).map(([status, config]) => {
               const Icon = config.icon;
               const columnTasks = getTasksByStatus(status as Task['status']);
 
               return (
                 <div key={status} className="flex flex-col">
-                  {/* Column Header */}
+                  {/* 看板列标题 */}
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-2">
                       <Icon className={`h-5 w-5 ${config.iconColor}`} />
@@ -641,21 +1068,36 @@ export function KanbanBoard({ projectId, onBack }: KanbanBoardProps) {
                         {columnTasks.length}
                       </Badge>
                     </div>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-8 w-8 p-0"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleAddTask(status as Task['status']);
+                      }}
+                      title={t('kanban.addTask')}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-plus">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                      </svg>
+                    </Button>
                   </div>
 
-                  {/* Droppable Column */}
+                  {/* 看板列 */}
                   <Droppable droppableId={status}>
                     {(provided, snapshot) => (
                       <div
                         ref={provided.innerRef}
                         {...provided.droppableProps}
-                        className={`flex-1 p-4 rounded-lg min-h-[500px] transition-colors ${
+                        className={`flex-1 py-[10px] px-[10px] rounded-lg min-h-[500px] transition-colors ${
                           snapshot.isDraggingOver 
                             ? 'bg-primary/5 border-2 border-primary border-dashed' 
                             : config.bgColor
                         }`}
                       >
-                        <div className="space-y-3">
+                        <div className="space-y-[10px]">
                           {columnTasks.map((task, index) => (
                             <Draggable key={task.id} draggableId={task.id} index={index}>
                               {(provided, snapshot) => (
@@ -663,58 +1105,55 @@ export function KanbanBoard({ projectId, onBack }: KanbanBoardProps) {
                                   ref={provided.innerRef}
                                   {...provided.draggableProps}
                                   {...provided.dragHandleProps}
-                                  className={`shadow-card hover:shadow-card-hover transition-smooth cursor-grab active:cursor-grabbing ${
+                                  className={`shadow-card hover:shadow-card-hover transition-smooth cursor-grab active:cursor-grabbing overflow-hidden ${
                                     snapshot.isDragging ? 'rotate-2 shadow-card-hover' : ''
                                   }`}
                                   onClick={() => handleTaskClick(task)}
                                 >
-                                  <CardHeader className="pb-3">
-                                    <div className="flex flex-col space-y-2">
-                                      <div className="flex items-start">
-                                        {/* 优先级标签 - 可点击切换 */}
-                                        <div 
-                                          className={`flex-shrink-0 w-3 h-3 rounded-full mr-2 cursor-pointer ${task.priority ? getTaskPriorityColor(task.priority).replace('bg-', 'bg-').replace('text-', '') : 'bg-gray-300'}`}
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handlePriorityChange(task.id, task.priority);
-                                          }}
-                                          title={task.priority || '设置优先级'}
-                                        />
-                                        <CardTitle className="text-sm font-medium leading-snug">
+                                  <CardHeader className="pb-3 p-2.5 h-auto relative">
+                                    <div className="flex">
+                                      {/* 左侧优先级颜色条 */}
+                                      <div 
+                                        className={`w-[6px] h-full rounded cursor-pointer absolute top-0 bottom-0 left-0 ${getTaskPriorityColorBarColor(task.priority)}`}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handlePriorityChange(task.id, task.priority);
+                                        }}
+                                        title={task.priority || '设置优先级'}
+                                      />
+                                      
+                                      {/* 右侧上下布局 */}
+                                      <div className="flex-1 flex flex-col ml-2">
+                                        {/* 上方：任务标题 */}
+                                        <CardTitle className="text-sm font-medium leading-snug mb-2">
                                           {task.title}
                                         </CardTitle>
-                                      </div>
-                                      <div className="flex flex-wrap gap-2 items-center">
-                                        <Badge 
-                                          variant="outline" 
-                                          className="text-xs bg-primary-light text-primary border-primary/20"
-                                        >
-                                          {getFeatureTitle(task.fid)}
-                                        </Badge>
-                                        {task.tag && (
+                                        
+                                        {/* 下方：各种标签 */}
+                                        <div className="flex flex-wrap gap-2 items-center">
                                           <Badge 
                                             variant="outline" 
-                                            className="text-xs bg-purple-50 text-purple-700 border-purple-200"
+                                            className="text-xs bg-primary-light text-primary border-primary/20"
                                           >
-                                            {task.tag}
+                                            {getFeatureTitle(task.fid)}
                                           </Badge>
-                                        )}
-                                        {task.priority && (
-                                          <Badge 
-                                            variant="outline" 
-                                            className={`text-xs ${getTaskPriorityColor(task.priority)}`}
-                                          >
-                                            {task.priority}
-                                          </Badge>
-                                        )}
-                                        <span className="text-xs text-blue-700 ml-auto">
-                                          {task.estimatedEndDate ? new Date(task.estimatedEndDate).toLocaleDateString() : new Date('1970-01-01').toLocaleDateString()}
-                                        </span>
+                                          {task.tag && (
+                                            <Badge 
+                                              variant="outline" 
+                                              className="text-xs bg-purple-50 text-purple-700 border-purple-200"
+                                            >
+                                              {task.tag}
+                                            </Badge>
+                                          )}
+                                          <span className="text-xs text-blue-700 ml-auto">
+                                            {task.estimatedEndDate ? new Date(task.estimatedEndDate).toLocaleDateString() : t('kanban.noDate')}
+                                          </span>
+                                        </div>
                                       </div>
                                     </div>
                                   </CardHeader>
                                   {task.description && (
-                                    <CardContent className="pt-0">
+                                    <CardContent className="pt-0 p-2.5">
                                       <p className="text-sm text-muted-foreground">
                                         {task.description}
                                       </p>
@@ -742,7 +1181,7 @@ export function KanbanBoard({ projectId, onBack }: KanbanBoardProps) {
         </DragDropContext>
       </div>
 
-      {/* Task Detail Modal */}
+      {/* 任务详情弹窗 */}
       {selectedTask && (
         <TaskDetailModal
           project={selectedTask.project}

@@ -44,6 +44,8 @@ All colors MUST be HSL.
     /* Custom kanban colors */
     --kanban-todo: 214 100% 97%;
     --kanban-doing: 45 100% 96%;
+    --kanban-testing: 270 100% 96%;
+    --kanban-fixing: 0 100% 96%;
     --kanban-done: 142 76% 96%;
     
     /* Gradients */

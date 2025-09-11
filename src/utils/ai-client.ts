@@ -73,7 +73,7 @@ export class AIClient {
           }
         ],
         temperature: 0.7,
-        max_tokens: 1000,
+        max_tokens: 2000,
       };
 
       // 根据供应商设置认证和请求体
@@ -84,7 +84,7 @@ export class AIClient {
         headers['x-api-key'] = this.config.apiKey!;
         headers['anthropic-version'] = '2023-06-01';
         requestBody.model = model.id;
-        requestBody.max_tokens = 1000;
+        requestBody.max_tokens = 2000;
       } else {
         // 其他供应商使用通用格式
         headers['Authorization'] = `Bearer ${this.config.apiKey}`;

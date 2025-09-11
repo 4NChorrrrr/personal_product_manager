@@ -15,7 +15,7 @@ import { Plus, Calendar, MoreVertical, Trash2, Edit, X, CheckCircle, Circle, Clo
 import { Project, Task } from '../types/project';
 import { getProjects, deleteProject, getProject, saveProject } from '../utils/storage';
 
-type TaskStatus = 'todo' | 'doing' | 'done';
+type TaskStatus = 'todo' | 'doing' | 'testing' | 'fixing' | 'done';
 
 interface ProjectsListProps {
   onNewProject: () => void;
@@ -44,7 +44,7 @@ function TaskDetailModal({ project, task, onClose, onUpdate, onDelete, onMoveTas
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const handleSave = () => {
-    const updatedTask = { ...task, title: editedTitle, description: editedDescription, status: editedStatus, priority: editedPriority, estimatedEndDate: editedEstimatedEndDate, tag: editedTag };
+    const updatedTask = { ...task, title: editedTitle, description: editedDescription, status: editedStatus, priority: editedPriority, estimatedEndDate: editedEstimatedEndDate, tag: editedTag, duration: task.duration };
     onUpdate(updatedTask);
     setIsEditing(false);
     setIsEditingTitle(false);
@@ -144,10 +144,10 @@ function TaskDetailModal({ project, task, onClose, onUpdate, onDelete, onMoveTas
                 className="border rounded p-1"
               >
                 <option value="">选择优先级</option>
-                <option value="Must have">Must have</option>
-                <option value="Should have">Should have</option>
-                <option value="Could have">Could have</option>
-                <option value="Won't have">Won't have</option>
+                <option value={t('reviewProject.priorityMust')}>{t('reviewProject.priorityMust')}</option>
+                          <option value={t('reviewProject.priorityShould')}>{t('reviewProject.priorityShould')}</option>
+                          <option value={t('reviewProject.priorityCould')}>{t('reviewProject.priorityCould')}</option>
+                          <option value={t('reviewProject.priorityWont')}>{t('reviewProject.priorityWont')}</option>
               </select>
             ) : (
               <Badge className={getTaskPriorityColor(task.priority || '')}>

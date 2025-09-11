@@ -2,11 +2,12 @@ export interface Task {
   id: string;
   fid: number;
   title: string;
-  status: 'todo' | 'doing' | 'done';
+  status: 'todo' | 'doing' | 'testing' | 'fixing' | 'done';
   description?: string;
   priority?: string; // 遵循MoSCoW方法：Must have, Should have, Could have, Won't have
   tag?: string; // 父功能标题
   estimatedEndDate?: string; // 格式：YYYY-MM-DDTHH:mm
+  duration?: number; // 任务持续时间（小时）
 }
 
 export interface Feature {

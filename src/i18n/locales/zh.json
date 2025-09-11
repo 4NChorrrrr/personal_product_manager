@@ -2,6 +2,15 @@
   "header": {
     "title": "想法到看板"
   },
+  "reviewProject": {
+    "priorityMust": "必须",
+    "priorityShould": "应该",
+    "priorityCould": "可以",
+    "priorityWont": "不会",
+    "clearPriority": "清除优先级",
+    "noPrioritySet": "未设置优先级",
+    "enterTag": "输入标签"
+  },
   "projects": {
     "title": "您的项目",
     "subtitle": "管理您的AI生成项目看板",
@@ -58,13 +67,21 @@
     "cancel": "取消",
     "todo": "待办",
     "doing": "进行中",
+    "testing": "测试中",
+    "fixing": "修复中",
     "done": "已完成",
     "back": "返回",
     "loading": "正在加载项目...",
     "feature": "功能",
     "progress": "进度",
     "tasksCompleted": "个任务已完成",
-    "noTasks": "无任务"
+    "noTasks": "暂无任务",
+    "newTask": "新任务",
+    "addNewFeature": "添加新功能",
+    "enterFeatureName": "输入功能名称",
+    "noDate": "未设置日期",
+    "status": "状态",
+    "priority": "优先级"
   },
   "taskDetail": {
     "title": "任务详情",
@@ -82,7 +99,21 @@
     "confirmDelete": "确定要删除此任务吗？此操作不可撤销。",
     "deleteWarning": "此操作不可撤销。所有任务数据将被永久移除。",
     "confirmCancel": "确定要不保存并取消吗？",
-    "cancelWarning": "如果您不保存就取消，您的更改将会丢失。"
+    "cancelWarning": "如果您不保存就取消，您的更改将会丢失。",
+    "noEstimatedEndDate": "未设置预估结束时间",
+    "date": "日期",
+    "startDate": "开始日期",
+    "setReminder": "设置提醒",
+    "selectReminder": "选择提醒时间",
+    "noReminder": "不提醒",
+    "reminder15min": "15分钟前",
+    "reminder1h": "1小时前",
+    "reminder2h": "2小时前",
+    "reminder1d": "1天前",
+    "reminder2d": "2天前",
+    "reminder1w": "1周前",
+    "reminderDescription": "您将在指定时间收到通知",
+    "remove": "移除"
   },
   "common": {
     "save": "保存",
@@ -111,12 +142,16 @@
     "apiEndpointPlaceholder": "API端点地址",
     "apiKey": "API 密钥",
     "apiKeyPlaceholder": "输入API密钥",
+    "testConnection": "测试连接",
     "apiKeyValid": "API密钥格式正确",
     "apiKeyValidating": "正在验证API密钥...",
     "apiKeyValidSuccess": "API密钥验证成功",
     "apiKeyValidError": "API密钥验证失败",
     "apiKeyFormatInvalid": "API密钥格式无效",
     "apiKeyInvalid": "API密钥无效",
+    "apiKeyPingTest": "正在测试连接...",
+    "apiKeyPingSuccess": "连接测试成功",
+    "apiKeyPingError": "连接测试失败",
     "unknownProvider": "未知的模型供应商",
     "openaiKeyFormat": "OpenAI API密钥应以'sk-'开头",
     "anthropicKeyFormat": "Anthropic API密钥应以'sk-ant-'开头",
